@@ -73,27 +73,35 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbybRyze2zivhfu_R6VvWtsOSQofXwmhPOEHBdzSv5fyCLK0qov03N7AkkZgRugglzBQ/exec"; 
-    const WHATSAPP_PHONE = "917718861024"; 
+    const API_URL = "PASTE_YOUR_NEW_EXEC_URL_HERE"; 
+const WHATSAPP_PHONE = "91XXXXXXXXXX"; 
 
-    let catalog = [];
-    let cart = {}; // Key: "ID_Size" -> { id, name, size, qty }
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
+async function loadCatalog() {
+  try {
+    const res = await fetch(API_URL, {
+      method: "GET",
+      redirect: "follow"
+    });
+    
+    if (!res.ok) throw new Error("HTTP error " + res.status);
+    
+    catalog = await res.json();
+    
+    if (catalog.error) {
+      throw new Error(catalog.error);
     }
-
-    async function loadCatalog() {
-      try {
-        const res = await fetch(API_URL);
-        catalog = await res.json();
-        render();
-      } catch (err) {
-        document.getElementById("productList").innerHTML = `
-          <p class="text-xs text-red-500 text-center py-10">Unable to load catalog. Please check Apps Script deployment permissions.</p>
-        `;
-      }
-    }
+    
+    render();
+  } catch (err) {
+    console.error(err);
+    document.getElementById("productList").innerHTML = `
+      <div class="p-4 text-center">
+        <p class="text-xs text-red-500 font-medium">Error loading items: ${err.message}</p>
+        <p class="text-[10px] text-slate-400 mt-1">Check browser console (F12) for details.</p>
+      </div>
+    `;
+  }
+}
 
     function render() {
       const q = document.getElementById("searchInput").value.toLowerCase();
