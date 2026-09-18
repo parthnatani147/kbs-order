@@ -1,85 +1,158 @@
-<script>
-    const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQXkkQ3M24j0kRVc0OKQ7Kiy-Dcix9xFIqrmo8OeCiZPm9bdqpEoCxh8AtHfxnW5CJHRb3_ai58SH3H/pub?output=csv";
-    const WHATSAPP_PHONE = "917718861024";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KBS Orders</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { -webkit-tap-highlight-color: transparent; }
+  </style>
+</head>
+<body class="bg-slate-100 pb-24 text-slate-900 antialiased font-sans">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-30 bg-slate-900 text-white px-4 py-3 shadow flex justify-between items-center">
+    <div>
+      <h1 class="font-bold text-base tracking-wide leading-tight">KBS Orders</h1>
+      <p class="text-[10px] text-slate-400">Wholesale Order Portal</p>
+    </div>
+    <span id="cartBadge" class="bg-amber-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">0 pcs</span>
+  </header>
+
+  <!-- Search Bar -->
+  <div class="p-3 bg-white border-b border-slate-200 sticky top-[53px] z-20 shadow-sm">
+    <input type="text" id="searchInput" oninput="render()" placeholder="Search product or item code..." 
+      class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm outline-none focus:border-slate-800">
+  </div>
+
+  <!-- Product List Container -->
+  <div id="productList" class="p-3 space-y-3">
+    <p class="text-xs text-slate-500 text-center py-10" id="loadingText">Loading catalog...</p>
+  </div>
+
+  <!-- Bottom Review Bar -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-3 shadow-lg flex justify-between items-center z-40">
+    <div>
+      <span class="text-[11px] text-slate-500 block leading-tight">Total Quantity</span>
+      <span class="text-base font-bold text-slate-900"><span id="cartQtyTotal">0</span> pcs</span>
+    </div>
+    <button onclick="openModal()" class="bg-emerald-700 text-white font-semibold px-6 py-2 rounded-lg text-sm shadow hover:bg-emerald-800 transition">
+      Review Order
+    </button>
+  </div>
+
+  <!-- Modal -->
+  <div id="checkoutModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-end justify-center">
+    <div class="bg-white w-full max-w-lg rounded-t-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-sm">Review & Confirm Order</h3>
+        <button onclick="closeModal()" class="text-slate-400 text-xl font-bold px-2">&times;</button>
+      </div>
+
+      <div class="space-y-2.5 text-xs">
+        <div>
+          <label class="font-semibold text-slate-700 mb-1 block">Firm / Shop Name *</label>
+          <input type="text" id="partyName" class="w-full border p-2 rounded" placeholder="e.g., Sharma Sanitary">
+        </div>
+        <div>
+          <label class="font-semibold text-slate-700 mb-1 block">Phone Number *</label>
+          <input type="tel" id="partyPhone" class="w-full border p-2 rounded" placeholder="10-digit mobile number">
+        </div>
+        <div>
+          <label class="font-semibold text-slate-700 mb-1 block">Transport / Delivery Notes</label>
+          <input type="text" id="orderNotes" class="w-full border p-2 rounded" placeholder="e.g., Apex Cargo / Station Road">
+        </div>
+      </div>
+
+      <div id="cartSummary" class="border-t border-b py-2 divide-y text-xs text-slate-700 max-h-48 overflow-y-auto"></div>
+
+      <button onclick="sendOrderViaWhatsApp()" class="w-full bg-emerald-600 text-white py-3 rounded-lg font-bold text-sm hover:bg-emerald-700 shadow">
+        Forward Order to WhatsApp
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQXkkQ3M24j0kRVc0OKQ7Kiy-Dcix9xFIqrmo8OeCiZPm9bdqpEoCxh8AtHfxnW5CJHRb3_ai58SH3H/pub?output=csv";
+    const WHATSAPP_NUM = "917718861024";
 
     let catalog = [];
-    let cart = {}; 
+    let cart = {};
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js');
     }
 
-    // Direct CSV string parser
-    function parseCSVData(text) {
-      const cleanText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-      const lines = cleanText.split('\n').filter(l => l.trim().length > 0);
+    function parseCSV(text) {
+      let lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+      lines = lines.filter(l => l.trim().length > 0);
       if (lines.length < 2) return [];
 
-      const parseLine = (line) => {
-        let cells = [];
+      const tokenize = (line) => {
+        let entries = [];
         let cur = '';
-        let inQuotes = false;
+        let inside = false;
         for (let i = 0; i < line.length; i++) {
-          const char = line[i];
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === ',' && !inQuotes) {
-            cells.push(cur.trim());
+          let ch = line[i];
+          if (ch === '"') {
+            inside = !inside;
+          } else if (ch === ',' && !inside) {
+            entries.push(cur.trim());
             cur = '';
           } else {
-            cur += char;
+            cur += ch;
           }
         }
-        cells.push(cur.trim());
-        return cells;
+        entries.push(cur.trim());
+        return entries;
       };
 
-      const headers = parseLine(lines[0]).map(h => h.toLowerCase().replace(/['"]/g, '').trim());
-      
+      const headers = tokenize(lines[0]).map(h => h.toLowerCase().replace(/['"]/g, '').trim());
       const idIdx = headers.indexOf('id');
       const nameIdx = headers.indexOf('name');
       const sizesIdx = headers.indexOf('sizes');
       const imgIdx = headers.indexOf('image');
 
-      return lines.slice(1).map((line, idx) => {
-        const row = parseLine(line);
-        const id = idIdx !== -1 && row[idIdx] ? row[idIdx].replace(/['"]/g, '').trim() : `KBS-${idx+1}`;
-        const name = nameIdx !== -1 && row[nameIdx] ? row[nameIdx].replace(/['"]/g, '').trim() : '';
-        const rawSizes = sizesIdx !== -1 && row[sizesIdx] ? row[sizesIdx].replace(/['"]/g, '').trim() : '';
-        const image = imgIdx !== -1 && row[imgIdx] ? row[imgIdx].replace(/['"]/g, '').trim() : '';
+      let parsed = [];
+      for (let i = 1; i < lines.length; i++) {
+        let row = tokenize(lines[i]);
+        let id = idIdx !== -1 && row[idIdx] ? row[idIdx].replace(/['"]/g, '').trim() : '';
+        let name = nameIdx !== -1 && row[nameIdx] ? row[nameIdx].replace(/['"]/g, '').trim() : '';
+        let rawSizes = sizesIdx !== -1 && row[sizesIdx] ? row[sizesIdx].replace(/['"]/g, '').trim() : '';
+        let img = imgIdx !== -1 && row[imgIdx] ? row[imgIdx].replace(/['"]/g, '').trim() : '';
 
-        if (!name && !id) return null;
+        if (!id && !name) continue;
 
-        const sizes = rawSizes ? rawSizes.split(',').map(s => s.trim()).filter(Boolean) : ["Regular"];
-
-        return { id, name: name || id, sizes, image };
-      }).filter(Boolean);
+        let sizes = rawSizes ? rawSizes.split(',').map(s => s.trim()).filter(Boolean) : ["Regular"];
+        parsed.push({
+          id: id || `KBS-${i}`,
+          name: name || id,
+          sizes: sizes,
+          image: img
+        });
+      }
+      return parsed;
     }
 
     async function loadCatalog() {
       const container = document.getElementById("productList");
       try {
-        const cacheUrl = SHEET_CSV_URL + (SHEET_CSV_URL.includes('?') ? '&' : '?') + 't=' + Date.now();
-        const res = await fetch(cacheUrl, { redirect: "follow" });
-        
-        if (!res.ok) throw new Error("HTTP error " + res.status);
-        
-        const csvText = await res.text();
-        catalog = parseCSVData(csvText);
+        const fetchUrl = CSV_URL + '&t=' + Date.now();
+        const res = await fetch(fetchUrl);
+        if (!res.ok) throw new Error("Status: " + res.status);
+        const text = await res.text();
+        catalog = parseCSV(text);
 
         if (!catalog.length) {
-          container.innerHTML = `<p class="text-xs text-slate-500 text-center py-10">No products found in the sheet.</p>`;
+          container.innerHTML = '<p class="text-xs text-slate-500 text-center py-10">No items found in catalog sheet.</p>';
           return;
         }
-
         render();
-      } catch (err) {
-        console.error(err);
-        container.innerHTML = `
-          <div class="p-4 text-center">
-            <p class="text-xs text-red-500 font-medium">Failed to load items: ${err.message}</p>
-          </div>
-        `;
+      } catch (e) {
+        container.innerHTML = `<p class="text-xs text-red-500 text-center py-10">Error loading catalog: ${e.message}</p>`;
       }
     }
 
@@ -87,37 +160,33 @@
       const searchEl = document.getElementById("searchInput");
       const q = searchEl ? searchEl.value.trim().toLowerCase() : "";
       const list = document.getElementById("productList");
-      
-      const filtered = catalog.filter(p => {
-        const nameMatch = p.name ? p.name.toLowerCase().includes(q) : false;
-        const idMatch = p.id ? p.id.toLowerCase().includes(q) : false;
-        return !q || nameMatch || idMatch;
+
+      const filtered = catalog.filter(item => {
+        const matchName = item.name.toLowerCase().includes(q);
+        const matchId = item.id.toLowerCase().includes(q);
+        return !q || matchName || matchId;
       });
 
       if (!filtered.length) {
-        list.innerHTML = `<p class="text-xs text-slate-400 text-center py-10">No matching items found.</p>`;
+        list.innerHTML = '<p class="text-xs text-slate-400 text-center py-10">No matching items found.</p>';
         return;
       }
 
-      list.innerHTML = filtered.map((product, pIdx) => {
-        const imgUrl = (product.image && product.image.trim()) 
-          ? product.image.trim() 
-          : 'https://placehold.co/120x120/png?text=KBS';
-
+      list.innerHTML = filtered.map((item, pIdx) => {
+        const imgUrl = item.image || 'https://placehold.co/120x120/png?text=KBS';
         return `
           <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col space-y-2.5">
             <div class="flex items-center space-x-3">
-              <img src="${imgUrl}" loading="lazy" class="w-16 h-16 object-cover rounded-lg border border-slate-100 flex-shrink-0" alt="${product.name}">
+              <img src="${imgUrl}" loading="lazy" class="w-16 h-16 object-cover rounded-lg border border-slate-100 flex-shrink-0" alt="${item.name}">
               <div class="flex-1 min-w-0">
-                <span class="text-[10px] font-bold text-slate-400">${product.id}</span>
-                <h4 class="text-xs font-semibold text-slate-800 leading-snug line-clamp-2">${product.name}</h4>
+                <span class="text-[10px] font-bold text-slate-400">${item.id}</span>
+                <h4 class="text-xs font-semibold text-slate-800 leading-snug line-clamp-2">${item.name}</h4>
               </div>
             </div>
 
-            <!-- Sizes & Quantity -->
             <div class="border-t border-slate-100 pt-2 space-y-1.5">
-              ${product.sizes.map((size) => {
-                const key = `${product.id}_${size}`;
+              ${item.sizes.map(size => {
+                const key = `${item.id}_${size}`;
                 const qty = cart[key]?.qty || 0;
                 return `
                   <div class="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg text-xs">
@@ -136,15 +205,14 @@
       }).join('');
     }
 
-    function changeQty(productIndex, encodedSize, delta) {
-      const p = catalog[productIndex];
+    function changeQty(pIdx, encodedSize, delta) {
+      const item = catalog[pIdx];
       const size = decodeURIComponent(encodedSize);
-      if (!p) return;
+      if (!item) return;
 
-      const key = `${p.id}_${size}`;
-
+      const key = `${item.id}_${size}`;
       if (!cart[key]) {
-        if (delta > 0) cart[key] = { id: p.id, name: p.name, size: size, qty: 1 };
+        if (delta > 0) cart[key] = { id: item.id, name: item.name, size: size, qty: 1 };
       } else {
         cart[key].qty += delta;
         if (cart[key].qty <= 0) delete cart[key];
@@ -155,7 +223,7 @@
 
     function updateCartTotals() {
       let totalPcs = 0;
-      Object.values(cart).forEach(item => totalPcs += item.qty);
+      Object.values(cart).forEach(i => totalPcs += i.qty);
       document.getElementById("cartBadge").innerText = `${totalPcs} pcs`;
       document.getElementById("cartQtyTotal").innerText = totalPcs;
     }
@@ -208,9 +276,10 @@
       msg += `*Total Quantity:* ${totalPcs} pcs\n`;
       msg += `--------------------------------`;
 
-      const url = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(msg)}`;
-      window.location.href = url;
+      window.location.href = `https://wa.me/${WHATSAPP_NUM}?text=${encodeURIComponent(msg)}`;
     }
 
     loadCatalog();
   </script>
+</body>
+</html>
