@@ -1,81 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>KBS Direct Order</title>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0f172a">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Fast, robust CSV Engine -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-</head>
-<body class="bg-slate-100 pb-24 text-slate-900 antialiased font-sans">
-
-  <!-- Sticky Header -->
-  <header class="sticky top-0 z-30 bg-slate-900 text-white px-4 py-3 shadow flex justify-between items-center">
-    <div>
-      <h1 class="font-bold text-base tracking-wide leading-tight">KBS Orders</h1>
-      <p class="text-[10px] text-slate-400">Wholesale Order Portal</p>
-    </div>
-    <span id="cartBadge" class="bg-amber-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">0 pcs</span>
-  </header>
-
-  <!-- Search Bar -->
-  <div class="p-3 bg-white border-b border-slate-200 sticky top-[53px] z-20 shadow-sm">
-    <input type="text" id="searchInput" oninput="render()" placeholder="Search product or item code..." 
-      class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm outline-none focus:border-slate-800">
-  </div>
-
-  <!-- Product Catalog -->
-  <div id="productList" class="p-3 space-y-3">
-    <p class="text-xs text-slate-500 text-center py-10" id="loadingText">Loading catalog...</p>
-  </div>
-
-  <!-- Bottom Checkout Bar -->
-  <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-3 shadow-lg flex justify-between items-center z-40">
-    <div>
-      <span class="text-[11px] text-slate-500 block leading-tight">Total Quantity</span>
-      <span class="text-base font-bold text-slate-900"><span id="cartQtyTotal">0</span> pcs</span>
-    </div>
-    <button onclick="openModal()" class="bg-emerald-700 text-white font-semibold px-6 py-2 rounded-lg text-sm shadow hover:bg-emerald-800 transition">
-      Review Order
-    </button>
-  </div>
-
-  <!-- Order Modal -->
-  <div id="checkoutModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-end justify-center">
-    <div class="bg-white w-full max-w-lg rounded-t-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="font-bold text-sm">Review & Confirm Order</h3>
-        <button onclick="closeModal()" class="text-slate-400 text-xl font-bold px-2">&times;</button>
-      </div>
-
-      <div class="space-y-2.5 text-xs">
-        <div>
-          <label class="font-semibold text-slate-700 mb-1 block">Firm / Shop Name *</label>
-          <input type="text" id="partyName" class="w-full border p-2 rounded" placeholder="e.g., Sharma Sanitary">
-        </div>
-        <div>
-          <label class="font-semibold text-slate-700 mb-1 block">Phone Number *</label>
-          <input type="tel" id="partyPhone" class="w-full border p-2 rounded" placeholder="10-digit mobile number">
-        </div>
-        <div>
-          <label class="font-semibold text-slate-700 mb-1 block">Transport / Delivery Notes</label>
-          <input type="text" id="orderNotes" class="w-full border p-2 rounded" placeholder="e.g., Apex Cargo / Station Road">
-        </div>
-      </div>
-
-      <div id="cartSummary" class="border-t border-b py-2 divide-y text-xs text-slate-700 max-h-48 overflow-y-auto"></div>
-
-      <button onclick="sendOrderViaWhatsApp()" class="w-full bg-emerald-600 text-white py-3 rounded-lg font-bold text-sm hover:bg-emerald-700 shadow">
-        Forward Order to WhatsApp
-      </button>
-    </div>
-  </div>
-
-  <script>
-    // Configured with your exact Sheet CSV endpoint and WhatsApp number
+<script>
     const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQXkkQ3M24j0kRVc0OKQ7Kiy-Dcix9xFIqrmo8OeCiZPm9bdqpEoCxh8AtHfxnW5CJHRb3_ai58SH3H/pub?output=csv";
     const WHATSAPP_PHONE = "917718861024";
 
@@ -86,50 +9,75 @@
       navigator.serviceWorker.register('sw.js');
     }
 
-    async function loadCatalog() {
-      try {
-        const cacheBustUrl = SHEET_CSV_URL + '&t=' + Date.now();
-        
-        Papa.parse(cacheBustUrl, {
-          download: true,
-          header: true,
-          skipEmptyLines: true,
-          transformHeader: function(h) {
-            return h.trim().toLowerCase().replace(/['"]/g, '');
-          },
-          complete: function(results) {
-            catalog = results.data.filter(row => row.id || row.name).map(row => {
-              let sizesArray = ["Regular"];
-              if (row.sizes && row.sizes.trim()) {
-                sizesArray = row.sizes.split(',').map(s => s.trim()).filter(Boolean);
-              }
-              return {
-                id: row.id ? row.id.trim() : "",
-                name: row.name ? row.name.trim() : "Item",
-                sizes: sizesArray,
-                image: row.image ? row.image.trim() : ""
-              };
-            });
+    // Direct CSV string parser
+    function parseCSVData(text) {
+      const cleanText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      const lines = cleanText.split('\n').filter(l => l.trim().length > 0);
+      if (lines.length < 2) return [];
 
-            if (!catalog.length) {
-              document.getElementById("productList").innerHTML = `
-                <p class="text-xs text-slate-500 text-center py-10">No items found in your Google Sheet.</p>
-              `;
-              return;
-            }
-
-            render();
-          },
-          error: function(err) {
-            throw new Error("CSV error: " + err.message);
+      const parseLine = (line) => {
+        let cells = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            cells.push(cur.trim());
+            cur = '';
+          } else {
+            cur += char;
           }
-        });
+        }
+        cells.push(cur.trim());
+        return cells;
+      };
 
+      const headers = parseLine(lines[0]).map(h => h.toLowerCase().replace(/['"]/g, '').trim());
+      
+      const idIdx = headers.indexOf('id');
+      const nameIdx = headers.indexOf('name');
+      const sizesIdx = headers.indexOf('sizes');
+      const imgIdx = headers.indexOf('image');
+
+      return lines.slice(1).map((line, idx) => {
+        const row = parseLine(line);
+        const id = idIdx !== -1 && row[idIdx] ? row[idIdx].replace(/['"]/g, '').trim() : `KBS-${idx+1}`;
+        const name = nameIdx !== -1 && row[nameIdx] ? row[nameIdx].replace(/['"]/g, '').trim() : '';
+        const rawSizes = sizesIdx !== -1 && row[sizesIdx] ? row[sizesIdx].replace(/['"]/g, '').trim() : '';
+        const image = imgIdx !== -1 && row[imgIdx] ? row[imgIdx].replace(/['"]/g, '').trim() : '';
+
+        if (!name && !id) return null;
+
+        const sizes = rawSizes ? rawSizes.split(',').map(s => s.trim()).filter(Boolean) : ["Regular"];
+
+        return { id, name: name || id, sizes, image };
+      }).filter(Boolean);
+    }
+
+    async function loadCatalog() {
+      const container = document.getElementById("productList");
+      try {
+        const cacheUrl = SHEET_CSV_URL + (SHEET_CSV_URL.includes('?') ? '&' : '?') + 't=' + Date.now();
+        const res = await fetch(cacheUrl, { redirect: "follow" });
+        
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        
+        const csvText = await res.text();
+        catalog = parseCSVData(csvText);
+
+        if (!catalog.length) {
+          container.innerHTML = `<p class="text-xs text-slate-500 text-center py-10">No products found in the sheet.</p>`;
+          return;
+        }
+
+        render();
       } catch (err) {
         console.error(err);
-        document.getElementById("productList").innerHTML = `
+        container.innerHTML = `
           <div class="p-4 text-center">
-            <p class="text-xs text-red-500 font-medium">Unable to load catalog: ${err.message}</p>
+            <p class="text-xs text-red-500 font-medium">Failed to load items: ${err.message}</p>
           </div>
         `;
       }
@@ -169,7 +117,7 @@
             <!-- Sizes & Quantity -->
             <div class="border-t border-slate-100 pt-2 space-y-1.5">
               ${product.sizes.map((size) => {
-                const key = `${product.id \vert{}\vert{} pIdx}_${size}`;
+                const key = `${product.id}_${size}`;
                 const qty = cart[key]?.qty || 0;
                 return `
                   <div class="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg text-xs">
@@ -193,7 +141,7 @@
       const size = decodeURIComponent(encodedSize);
       if (!p) return;
 
-      const key = `${p.id || productIndex}_${size}`;
+      const key = `${p.id}_${size}`;
 
       if (!cart[key]) {
         if (delta > 0) cart[key] = { id: p.id, name: p.name, size: size, qty: 1 };
@@ -266,5 +214,3 @@
 
     loadCatalog();
   </script>
-</body>
-</html>
