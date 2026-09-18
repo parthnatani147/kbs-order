@@ -73,35 +73,90 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwa14Bf7KIKjgD25U2DQD5GXAD1k9XsKnrd7Er_qjocYunCj2Xk3luPpCq9sU_a-6qa/exec"; 
-const WHATSAPP_PHONE = "91XXXXXXXXXX"; 
+    // -------------------------------------------------------------
+    // PUT YOUR LINKS HERE:
+    // -------------------------------------------------------------
+    const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQXkkQ3M24j0kRVc0OKQ7Kiy-Dcix9xFIqrmo8OeCiZPm9bdqpEoCxh8AtHfxnW5CJHRb3_ai58SH3H/pubhtml"; 
+    const WHATSAPP_PHONE = "917718861024"; // 10-digit phone with 91 prefix
+    // -------------------------------------------------------------
 
-async function loadCatalog() {
-  try {
-    const res = await fetch(API_URL, {
-      method: "GET",
-      redirect: "follow"
-    });
-    
-    if (!res.ok) throw new Error("HTTP error " + res.status);
-    
-    catalog = await res.json();
-    
-    if (catalog.error) {
-      throw new Error(catalog.error);
+    let catalog = [];
+    let cart = {}; 
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
     }
-    
-    render();
-  } catch (err) {
-    console.error(err);
-    document.getElementById("productList").innerHTML = `
-      <div class="p-4 text-center">
-        <p class="text-xs text-red-500 font-medium">Error loading items: ${err.message}</p>
-        <p class="text-[10px] text-slate-400 mt-1">Check browser console (F12) for details.</p>
-      </div>
-    `;
-  }
-}
+
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r\n|\n/);
+      if (lines.length < 2) return [];
+
+      const splitRow = (row) => {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < row.length; i++) {
+          const char = row[i];
+          if (char === '"' || char === "'") {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result;
+      };
+
+      const headers = splitRow(lines[0]).map(h => h.toLowerCase().replace(/['"]/g, ''));
+      
+      return lines.slice(1).map(line => {
+        if (!line.trim()) return null;
+        const values = splitRow(line);
+        let item = {};
+        headers.forEach((h, i) => {
+          let val = values[i] !== undefined ? values[i].replace(/^["']|["']$/g, '') : '';
+          item[h] = val;
+        });
+
+        if (item.sizes) {
+          item.sizes = item.sizes.split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+        } else {
+          item.sizes = ["Regular"];
+        }
+        return item;
+      }).filter(Boolean);
+    }
+
+    async function loadCatalog() {
+      try {
+        const cacheBustUrl = SHEET_CSV_URL + (SHEET_CSV_URL.includes('?') ? '&' : '?') + 't=' + Date.now();
+        const res = await fetch(cacheBustUrl);
+        if (!res.ok) throw new Error("HTTP status " + res.status);
+        
+        const csvText = await res.text();
+        catalog = parseCSV(csvText);
+
+        if (!catalog.length) {
+          document.getElementById("productList").innerHTML = `
+            <p class="text-xs text-slate-500 text-center py-10">No items found in your Google Sheet catalog.</p>
+          `;
+          return;
+        }
+
+        render();
+      } catch (err) {
+        console.error(err);
+        document.getElementById("productList").innerHTML = `
+          <div class="p-4 text-center">
+            <p class="text-xs text-red-500 font-medium">Unable to load catalog: ${err.message}</p>
+            <p class="text-[10px] text-slate-400 mt-1">Make sure you used File > Share > Publish to web (CSV format).</p>
+          </div>
+        `;
+      }
+    }
 
     function render() {
       const q = document.getElementById("searchInput").value.toLowerCase();
@@ -113,7 +168,7 @@ async function loadCatalog() {
       );
 
       if (!filtered.length) {
-        list.innerHTML = `<p class="text-xs text-slate-400 text-center py-10">No items found.</p>`;
+        list.innerHTML = `<p class="text-xs text-slate-400 text-center py-10">No matching items found.</p>`;
         return;
       }
 
@@ -130,7 +185,6 @@ async function loadCatalog() {
               </div>
             </div>
 
-            <!-- Size Variant Selection -->
             <div class="border-t border-slate-100 pt-2 space-y-1.5">
               ${product.sizes.map(size => {
                 const key = `${product.id}_${size}`;
