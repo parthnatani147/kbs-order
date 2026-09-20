@@ -9,42 +9,51 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { -webkit-tap-highlight-color: transparent; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body class="bg-slate-100 pb-24 text-slate-900 antialiased font-sans">
+<body class="bg-slate-50 pb-28 text-slate-900 antialiased font-sans">
 
-  <!-- Header -->
+  <!-- Sticky Header -->
   <header class="sticky top-0 z-30 bg-slate-900 text-white px-4 py-3 shadow flex justify-between items-center">
     <div>
       <h1 class="font-bold text-base tracking-wide leading-tight">KBS Orders</h1>
-      <p class="text-[10px] text-slate-400">Wholesale Order Portal</p>
+      <p class="text-[10px] text-slate-400">Direct Wholesale Order</p>
     </div>
     <span id="cartBadge" class="bg-amber-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">0 pcs</span>
   </header>
 
   <!-- Search Bar -->
   <div class="p-3 bg-white border-b border-slate-200 sticky top-[53px] z-20 shadow-sm">
-    <input type="text" id="searchInput" oninput="render()" placeholder="Search product or item code..." 
-      class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm outline-none focus:border-slate-800">
+    <input type="text" id="searchInput" oninput="render()" placeholder="Search items or codes..." 
+      class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs outline-none focus:border-slate-800">
   </div>
 
-  <!-- Product List Container -->
-  <div id="productList" class="p-3 space-y-3">
-    <p class="text-xs text-slate-500 text-center py-10" id="loadingText">Loading catalog...</p>
+  <!-- Category Horizontal Chips (Like Blinkit/Zepto) -->
+  <div id="categoryBar" class="bg-white border-b border-slate-200 px-3 py-2 flex space-x-2 overflow-x-auto no-scrollbar sticky top-[106px] z-10">
+    <button class="text-xs px-3 py-1 rounded-full bg-slate-900 text-white font-medium whitespace-nowrap">All</button>
   </div>
 
-  <!-- Bottom Review Bar -->
+  <!-- Product Grid: 2 Columns on Mobile, 3-4 on Tablet/Desktop -->
+  <div class="p-3">
+    <div id="productGrid" class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+      <p class="col-span-full text-xs text-slate-400 text-center py-10">Loading products...</p>
+    </div>
+  </div>
+
+  <!-- Bottom Bar -->
   <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-3 shadow-lg flex justify-between items-center z-40">
     <div>
-      <span class="text-[11px] text-slate-500 block leading-tight">Total Quantity</span>
-      <span class="text-base font-bold text-slate-900"><span id="cartQtyTotal">0</span> pcs</span>
+      <span class="text-[10px] text-slate-500 block leading-tight">Total Quantity</span>
+      <span class="text-sm font-bold text-slate-900"><span id="cartQtyTotal">0</span> pcs</span>
     </div>
-    <button onclick="openModal()" class="bg-emerald-700 text-white font-semibold px-6 py-2 rounded-lg text-sm shadow hover:bg-emerald-800 transition">
+    <button onclick="openModal()" class="bg-emerald-700 text-white font-semibold px-5 py-2 rounded-lg text-xs shadow hover:bg-emerald-800 transition">
       Review Order
     </button>
   </div>
 
-  <!-- Modal -->
+  <!-- Checkout Modal -->
   <div id="checkoutModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-end justify-center">
     <div class="bg-white w-full max-w-lg rounded-t-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b pb-2">
@@ -80,12 +89,16 @@
     const WHATSAPP_NUM = "917718861024";
 
     let catalog = [];
-    let cart = {};
+    let categories = ["All"];
+    let activeCategory = "All";
+    let selectedSizes = {}; // { productIdx: chosenSizeString }
+    let cart = {};          // { "ID_Size": { id, name, size, qty } }
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js');
     }
 
+    // CSV Parser supporting columns: id, category, name, sizes, image
     function parseCSV(text) {
       let lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
       lines = lines.filter(l => l.trim().length > 0);
@@ -112,14 +125,18 @@
 
       const headers = tokenize(lines[0]).map(h => h.toLowerCase().replace(/['"]/g, '').trim());
       const idIdx = headers.indexOf('id');
+      const catIdx = headers.indexOf('category');
       const nameIdx = headers.indexOf('name');
       const sizesIdx = headers.indexOf('sizes');
       const imgIdx = headers.indexOf('image');
 
       let parsed = [];
+      let catSet = new Set(["All"]);
+
       for (let i = 1; i < lines.length; i++) {
         let row = tokenize(lines[i]);
         let id = idIdx !== -1 && row[idIdx] ? row[idIdx].replace(/['"]/g, '').trim() : '';
+        let cat = catIdx !== -1 && row[catIdx] ? row[catIdx].replace(/['"]/g, '').trim() : 'General';
         let name = nameIdx !== -1 && row[nameIdx] ? row[nameIdx].replace(/['"]/g, '').trim() : '';
         let rawSizes = sizesIdx !== -1 && row[sizesIdx] ? row[sizesIdx].replace(/['"]/g, '').trim() : '';
         let img = imgIdx !== -1 && row[imgIdx] ? row[imgIdx].replace(/['"]/g, '').trim() : '';
@@ -127,18 +144,22 @@
         if (!id && !name) continue;
 
         let sizes = rawSizes ? rawSizes.split(',').map(s => s.trim()).filter(Boolean) : ["Regular"];
+        if (cat) catSet.add(cat);
+
         parsed.push({
           id: id || `KBS-${i}`,
+          category: cat || "General",
           name: name || id,
           sizes: sizes,
           image: img
         });
       }
+
+      categories = Array.from(catSet);
       return parsed;
     }
 
     async function loadCatalog() {
-      const container = document.getElementById("productList");
       try {
         const fetchUrl = CSV_URL + '&t=' + Date.now();
         const res = await fetch(fetchUrl);
@@ -146,77 +167,126 @@
         const text = await res.text();
         catalog = parseCSV(text);
 
-        if (!catalog.length) {
-          container.innerHTML = '<p class="text-xs text-slate-500 text-center py-10">No items found in catalog sheet.</p>';
-          return;
-        }
+        // Pre-select first size for every item
+        catalog.forEach((item, idx) => {
+          selectedSizes[idx] = item.sizes[0] || "Regular";
+        });
+
+        renderCategories();
         render();
       } catch (e) {
-        container.innerHTML = `<p class="text-xs text-red-500 text-center py-10">Error loading catalog: ${e.message}</p>`;
+        document.getElementById("productGrid").innerHTML = 
+          `<p class="col-span-full text-xs text-red-500 text-center py-10">Error loading catalog: ${e.message}</p>`;
       }
+    }
+
+    function renderCategories() {
+      const bar = document.getElementById("categoryBar");
+      bar.innerHTML = categories.map(c => `
+        <button onclick="setCategory('${c.replace(/'/g, "\\'")}')" 
+          class="text-xs px-3 py-1.5 rounded-full font-medium whitespace-nowrap transition ${activeCategory === c ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+          ${c}
+        </button>
+      `).join('');
+    }
+
+    function setCategory(cat) {
+      activeCategory = cat;
+      renderCategories();
+      render();
     }
 
     function render() {
       const searchEl = document.getElementById("searchInput");
       const q = searchEl ? searchEl.value.trim().toLowerCase() : "";
-      const list = document.getElementById("productList");
+      const grid = document.getElementById("productGrid");
 
-      const filtered = catalog.filter(item => {
-        const matchName = item.name.toLowerCase().includes(q);
-        const matchId = item.id.toLowerCase().includes(q);
-        return !q || matchName || matchId;
+      const filtered = catalog.filter((item) => {
+        const matchesCat = activeCategory === "All" || item.category === activeCategory;
+        const matchesSearch = !q || item.name.toLowerCase().includes(q) || item.id.toLowerCase().includes(q);
+        return matchesCat && matchesSearch;
       });
 
       if (!filtered.length) {
-        list.innerHTML = '<p class="text-xs text-slate-400 text-center py-10">No matching items found.</p>';
+        grid.innerHTML = '<p class="col-span-full text-xs text-slate-400 text-center py-10">No products found.</p>';
         return;
       }
 
-      list.innerHTML = filtered.map((item, pIdx) => {
-        const imgUrl = item.image || 'https://placehold.co/120x120/png?text=KBS';
+      grid.innerHTML = filtered.map(item => {
+        const pIdx = catalog.indexOf(item);
+        const curSize = selectedSizes[pIdx] || item.sizes[0] || "Regular";
+        const key = `${item.id}_${curSize}`;
+        const qty = cart[key]?.qty || 0;
+        const imgUrl = item.image ? item.image : 'https://placehold.co/300x300/png?text=KBS';
+
         return `
-          <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col space-y-2.5">
-            <div class="flex items-center space-x-3">
-              <img src="${imgUrl}" loading="lazy" class="w-16 h-16 object-cover rounded-lg border border-slate-100 flex-shrink-0" alt="${item.name}">
-              <div class="flex-1 min-w-0">
-                <span class="text-[10px] font-bold text-slate-400">${item.id}</span>
-                <h4 class="text-xs font-semibold text-slate-800 leading-snug line-clamp-2">${item.name}</h4>
-              </div>
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col justify-between shadow-sm">
+            <!-- Product Image -->
+            <div class="relative w-full pb-[85%] bg-slate-100">
+              <img src="${imgUrl}" loading="lazy" class="absolute inset-0 w-full h-full object-contain p-2" alt="${item.name}">
+              <span class="absolute top-1.5 left-1.5 bg-slate-900/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                ${item.id}
+              </span>
             </div>
 
-            <div class="border-t border-slate-100 pt-2 space-y-1.5">
-              ${item.sizes.map(size => {
-                const key = `${item.id}_${size}`;
-                const qty = cart[key]?.qty || 0;
-                return `
-                  <div class="flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg text-xs">
-                    <span class="font-medium text-slate-700">${size}</span>
-                    <div class="flex items-center space-x-2">
-                      <button onclick="changeQty(${pIdx}, '${encodeURIComponent(size)}', -1)" class="w-7 h-7 flex items-center justify-center bg-white border border-slate-300 rounded font-bold text-slate-600 active:bg-slate-200">-</button>
-                      <span class="w-5 text-center font-bold text-slate-800">${qty}</span>
-                      <button onclick="changeQty(${pIdx}, '${encodeURIComponent(size)}', 1)" class="w-7 h-7 flex items-center justify-center bg-slate-900 rounded font-bold text-white active:bg-black">+</button>
-                    </div>
+            <!-- Details -->
+            <div class="p-2.5 flex-1 flex flex-col justify-between space-y-2">
+              <div>
+                <h4 class="text-xs font-semibold text-slate-800 leading-snug line-clamp-2 h-8" title="${item.name}">
+                  ${item.name}
+                </h4>
+              </div>
+
+              <!-- Size Dropdown/Pill -->
+              <div>
+                ${item.sizes.length > 1 ? `
+                  <select onchange="selectSize(${pIdx}, this.value)" class="w-full bg-slate-50 border border-slate-200 text-[11px] font-medium text-slate-700 py-1 px-1.5 rounded outline-none">
+                    ${item.sizes.map(s => `<option value="${s}" ${s === curSize ? 'selected' : ''}>${s}</option>`).join('')}
+                  </select>
+                ` : `
+                  <span class="inline-block bg-slate-50 border border-slate-100 text-[10px] font-medium text-slate-500 px-2 py-0.5 rounded">
+                    ${curSize}
+                  </span>
+                `}
+              </div>
+
+              <!-- Add to Cart or Quantity Selector -->
+              <div class="pt-1">
+                ${qty === 0 ? `
+                  <button onclick="changeQty(${pIdx}, 1)" class="w-full py-1.5 bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 text-xs font-bold rounded-lg transition uppercase tracking-wider">
+                    ADD
+                  </button>
+                ` : `
+                  <div class="flex items-center justify-between bg-slate-900 text-white rounded-lg px-2 py-1">
+                    <button onclick="changeQty(${pIdx}, -1)" class="w-6 h-6 flex items-center justify-center font-bold active:text-amber-400 text-sm">-</button>
+                    <span class="text-xs font-bold">${qty}</span>
+                    <button onclick="changeQty(${pIdx}, 1)" class="w-6 h-6 flex items-center justify-center font-bold active:text-amber-400 text-sm">+</button>
                   </div>
-                `;
-              }).join('')}
+                `}
+              </div>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    function changeQty(pIdx, encodedSize, delta) {
-      const item = catalog[pIdx];
-      const size = decodeURIComponent(encodedSize);
-      if (!item) return;
+    function selectSize(pIdx, newSize) {
+      selectedSizes[pIdx] = newSize;
+      render();
+    }
 
+    function changeQty(pIdx, delta) {
+      const item = catalog[pIdx];
+      const size = selectedSizes[pIdx] || item.sizes[0] || "Regular";
       const key = `${item.id}_${size}`;
+
       if (!cart[key]) {
         if (delta > 0) cart[key] = { id: item.id, name: item.name, size: size, qty: 1 };
       } else {
         cart[key].qty += delta;
         if (cart[key].qty <= 0) delete cart[key];
       }
+
       updateCartTotals();
       render();
     }
