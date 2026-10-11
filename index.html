@@ -8,22 +8,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #108435;
+      --primary: #0c831f;
+      --primary-dark: #096818;
       --primary-light: #e8f5e9;
-      --accent-blue: #0c831f;
-      --navy: #1f2937;
-      --bg: #f5f7f9;
+      --bg: #f4f6f8;
       --surface: #ffffff;
       --border: #e5e7eb;
       --text-muted: #6b7280;
       --text-main: #111827;
       --radius: 12px;
-      --shadow: 0 4px 14px rgba(0,0,0,0.06);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
     body { background: var(--bg); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-    /* Header */
+    /* Top Bar */
     header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
@@ -33,7 +31,7 @@
       gap: 12px;
       z-index: 20;
     }
-    .brand-title { font-size: 17px; font-weight: 800; color: #0b5c25; white-space: nowrap; }
+    .brand-title { font-size: 17px; font-weight: 800; color: var(--primary); white-space: nowrap; }
     .search-box {
       flex: 1;
       display: flex;
@@ -51,7 +49,7 @@
       font-size: 14px;
     }
 
-    /* Main Layout */
+    /* Layout */
     .app-body {
       display: flex;
       flex: 1;
@@ -61,7 +59,7 @@
 
     /* Category Sidebar */
     aside.sidebar {
-      width: 88px;
+      width: 86px;
       background: #fff;
       border-right: 1px solid var(--border);
       overflow-y: auto;
@@ -82,8 +80,7 @@
       flex-direction: column;
       align-items: center;
       gap: 6px;
-      line-height: 1.25;
-      transition: all 0.15s ease;
+      line-height: 1.2;
     }
     .cat-item.active {
       background: #f0fdf4;
@@ -92,14 +89,15 @@
       font-weight: 700;
     }
     .cat-icon-circle {
-      width: 44px;
-      height: 44px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
       background: #f3f4f6;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 15px;
+      font-weight: 700;
       color: #6b7280;
     }
     .cat-item.active .cat-icon-circle {
@@ -107,7 +105,7 @@
       color: var(--primary);
     }
 
-    /* Products View */
+    /* Product Grid */
     main.products-area {
       flex: 1;
       overflow-y: auto;
@@ -126,11 +124,10 @@
     }
     @media (min-width: 768px) {
       aside.sidebar { width: 120px; }
-      .cat-item { font-size: 12px; }
-      .product-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+      .product-grid { grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 14px; }
     }
 
-    /* Card */
+    /* Product Card */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -139,7 +136,7 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      position: relative;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     }
     .img-wrap {
       width: 100%;
@@ -157,14 +154,12 @@
       height: 100%;
       object-fit: contain;
       mix-blend-mode: multiply;
-      transition: transform 0.2s ease;
     }
     .item-material {
       font-size: 10px;
       color: #9ca3af;
       text-transform: uppercase;
       font-weight: 700;
-      letter-spacing: 0.5px;
     }
     .item-name {
       font-size: 13px;
@@ -179,68 +174,52 @@
       min-height: 32px;
     }
 
-    /* Variants Pill Selector */
-    .variant-selector-wrap {
-      display: flex;
-      gap: 5px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-      margin-bottom: 8px;
-      scrollbar-width: none;
-    }
-    .variant-selector-wrap::-webkit-scrollbar { display: none; }
-    .variant-chip {
-      font-size: 10.5px;
-      font-weight: 600;
-      padding: 3px 7px;
+    /* Variant Trigger Badge in Card */
+    .variant-trigger-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
       border-radius: 6px;
-      background: #f3f4f6;
-      color: #4b5563;
-      border: 1px solid #e5e7eb;
-      white-space: nowrap;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #334155;
       cursor: pointer;
+      margin-bottom: 8px;
+      width: 100%;
     }
-    .variant-chip.selected {
-      background: #eff6ff;
-      border-color: #3b82f6;
-      color: #1d4ed8;
-      font-weight: 700;
+    .variant-trigger-pill span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .card-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-top: 6px;
+      margin-top: 4px;
     }
     .price-box {
       display: flex;
       flex-direction: column;
     }
-    .rate {
-      font-size: 14px;
-      font-weight: 800;
-      color: #111827;
-    }
-    .item-code {
-      font-size: 10px;
-      color: #9ca3af;
-      font-weight: 600;
-    }
+    .rate { font-size: 15px; font-weight: 800; color: #111827; }
+    .item-code { font-size: 10px; color: #9ca3af; font-weight: 600; }
 
-    /* Action Add/Counter */
+    /* Buttons & Counters */
     .btn-add {
       background: #fff;
-      border: 1px solid var(--primary);
+      border: 1.5px solid var(--primary);
       color: var(--primary);
       font-weight: 700;
       font-size: 12px;
       padding: 6px 14px;
       border-radius: 8px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 4px;
     }
     .btn-add:active { background: var(--primary-light); }
     .qty-counter {
@@ -257,51 +236,18 @@
       background: transparent;
       border: none;
       color: #fff;
-      padding: 5px 9px;
+      padding: 5px 8px;
       cursor: pointer;
       font-weight: 800;
       font-size: 14px;
     }
     .qty-val { min-width: 18px; text-align: center; }
 
-    /* Floating Cart Bar */
-    .cart-float-bar {
-      position: fixed;
-      bottom: 12px;
-      left: 12px;
-      right: 12px;
-      background: #027a48;
-      color: white;
-      border-radius: 14px;
-      padding: 12px 16px;
-      display: none;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 10px 25px rgba(2, 122, 72, 0.35);
-      cursor: pointer;
-      z-index: 50;
-      animation: slideUp 0.25s ease;
-    }
-    @keyframes slideUp {
-      from { transform: translateY(100%); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-    .cart-summary-txt { display: flex; flex-direction: column; }
-    .cart-items-count { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; font-weight: 700; }
-    .cart-total-amount { font-size: 16px; font-weight: 800; }
-    .view-cart-btn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-weight: 700;
-      font-size: 14px;
-    }
-
-    /* Modals */
+    /* Modals & Backdrop */
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.55);
       z-index: 100;
       display: none;
       align-items: flex-end;
@@ -317,7 +263,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      animation: sheetUp 0.25s ease;
+      animation: sheetUp 0.22s ease-out;
     }
     @keyframes sheetUp {
       from { transform: translateY(100%); }
@@ -332,23 +278,101 @@
       font-weight: 800;
       font-size: 16px;
     }
-    .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #6b7280; }
+    .close-btn {
+      background: #f3f4f6;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #4b5563;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
     .modal-content {
-      padding: 16px;
+      padding: 14px 16px;
       overflow-y: auto;
       flex: 1;
     }
-    .cart-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid #f3f4f6;
-    }
-    .cart-item-title { font-weight: 700; font-size: 13px; }
-    .cart-item-sub { font-size: 11px; color: var(--text-muted); }
 
-    /* Inputs */
+    /* Variant Selector Card (Screenshot Style) */
+    .variant-card-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+    .variant-card-item.in-cart {
+      border-color: #86efac;
+      background: #f0fdf4;
+    }
+    .variant-info-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+    .variant-thumb {
+      width: 48px;
+      height: 48px;
+      border-radius: 6px;
+      background: #f8fafc;
+      object-fit: contain;
+      mix-blend-mode: multiply;
+      border: 1px solid #f1f5f9;
+    }
+    .variant-spec-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 2px;
+    }
+    .variant-spec-sub {
+      font-size: 11px;
+      color: #64748b;
+      margin-bottom: 2px;
+    }
+    .variant-price {
+      font-size: 14px;
+      font-weight: 800;
+      color: #111827;
+    }
+
+    /* Floating Cart Bar */
+    .cart-float-bar {
+      position: fixed;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      background: var(--primary);
+      color: white;
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 10px 25px rgba(12, 131, 31, 0.35);
+      cursor: pointer;
+      z-index: 50;
+      animation: slideUp 0.2s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .cart-summary-txt { display: flex; flex-direction: column; }
+    .cart-items-count { font-size: 11px; text-transform: uppercase; font-weight: 700; opacity: 0.9; }
+    .cart-total-amount { font-size: 16px; font-weight: 800; }
+    .view-cart-btn { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; }
+
+    /* Form Fields */
     .form-group { margin-bottom: 14px; }
     .form-group label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 5px; color: #374151; }
     .form-group input {
@@ -377,7 +401,6 @@
       gap: 8px;
       box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
     }
-    .btn-submit:active { filter: brightness(0.95); }
     .btn-primary-action {
       width: 100%;
       padding: 14px;
@@ -389,12 +412,19 @@
       font-weight: 800;
       cursor: pointer;
     }
+    .cart-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
     .empty-state { text-align: center; padding: 40px 10px; color: var(--text-muted); }
   </style>
 </head>
 <body>
 
-  <!-- Top Header -->
+  <!-- Top Bar -->
   <header>
     <div class="brand-title">KBS Portal</div>
     <div class="search-box">
@@ -403,10 +433,10 @@
     </div>
   </header>
 
-  <!-- App Body: Left Sidebar + Products Grid -->
+  <!-- Main Body -->
   <div class="app-body">
     <aside class="sidebar" id="sidebarNav"></aside>
-    <main class="products-area" id="productsArea">
+    <main class="products-area">
       <div class="category-header-title" id="activeCategoryTitle">Loading Catalogue...</div>
       <div class="product-grid" id="productGrid"></div>
     </main>
@@ -424,6 +454,17 @@
     </div>
   </div>
 
+  <!-- Variant Selection Dialog (Screenshot Style) -->
+  <div class="modal-backdrop" id="variantModal">
+    <div class="bottom-sheet">
+      <div class="modal-header">
+        <span id="variantModalTitle">Select Variant</span>
+        <button class="close-btn" onclick="closeVariantModal()">✕</button>
+      </div>
+      <div class="modal-content" id="variantModalList"></div>
+    </div>
+  </div>
+
   <!-- Cart Modal -->
   <div class="modal-backdrop" id="cartModal">
     <div class="bottom-sheet">
@@ -433,20 +474,20 @@
       </div>
       <div class="modal-content" id="cartItemList"></div>
       <div style="padding: 14px; border-top: 1px solid var(--border);">
-        <button class="btn-primary-action" onclick="openCheckoutModal()">Proceed to Checkout</button>
+        <button class="btn-primary-action" onclick="openCheckoutModal()">Proceed to Order</button>
       </div>
     </div>
   </div>
 
-  <!-- Checkout Details Modal -->
+  <!-- Customer Info Modal -->
   <div class="modal-backdrop" id="checkoutModal">
     <div class="bottom-sheet">
       <div class="modal-header">
-        <span>Dealer Information</span>
+        <span>Dealer / Order Details</span>
         <button class="close-btn" onclick="closeCheckoutModal()">✕</button>
       </div>
       <div class="modal-content">
-        <form id="orderForm" onsubmit="submitWhatsAppOrder(event)">
+        <form onsubmit="submitWhatsAppOrder(event)">
           <div class="form-group">
             <label for="firmName">Firm / Shop Name *</label>
             <input type="text" id="firmName" placeholder="e.g. Goyal Sanitary Store" required />
@@ -456,12 +497,12 @@
             <input type="tel" id="phoneNumber" placeholder="e.g. 98290XXXXX" required />
           </div>
           <div class="form-group">
-            <label for="transportName">Transport / Destination City *</label>
+            <label for="transportName">Transport Name / Station *</label>
             <input type="text" id="transportName" placeholder="e.g. Jaipur Golden Transport / Sikar" required />
           </div>
           <div class="form-group">
             <label for="orderNotes">Remark / Notes (Optional)</label>
-            <input type="text" id="orderNotes" placeholder="Any specific requirements or urgency" />
+            <input type="text" id="orderNotes" placeholder="Any special instruction or urgent note" />
           </div>
           <button type="submit" class="btn-submit">
             <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2zm.02 18.06c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.04 8.04 0 01-1.24-4.29c0-4.46 3.63-8.09 8.09-8.09 2.16 0 4.19.84 5.72 2.37 1.53 1.53 2.37 3.56 2.37 5.72 0 4.46-3.63 8.09-8.09 8.09zm4.44-6.07c-.24-.12-1.44-.71-1.66-.79-.23-.08-.39-.12-.55.12-.17.24-.63.79-.78.95-.14.16-.29.18-.53.06-.24-.12-1.02-.38-1.95-1.21-.72-.64-1.21-1.44-1.35-1.68-.14-.24-.02-.37.1-.49.11-.11.24-.29.36-.43.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.55-1.33-.76-1.82-.2-.48-.41-.41-.56-.42l-.48-.01c-.16 0-.42.06-.64.3-.22.24-.86.84-.86 2.05s.88 2.38 1 2.54c.12.16 1.73 2.64 4.19 3.7.59.25 1.05.4 1.41.51.59.19 1.13.16 1.56.1.48-.07 1.44-.59 1.64-1.16.2-.57.2-1.06.14-1.16-.06-.1-.22-.16-.46-.28z"/></svg>
@@ -477,7 +518,6 @@
     const GID = '2073319162';
     const WHATSAPP_NUMBER = '917718861024';
 
-    // Format drive images into fast thumbnails
     function formatDriveImage(url) {
       if (!url) return 'https://placehold.co/300x300/f3f4f6/9ca3af?text=KBS';
       const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
@@ -487,7 +527,6 @@
       return url;
     }
 
-    // CSV Parse utility
     function parseCSV(text) {
       const rows = [];
       let row = [], entry = '', insideQuote = false;
@@ -512,24 +551,21 @@
       return rows;
     }
 
-    // State
-    let groupedProducts = []; // Array of product groups
+    let groupedProducts = [];
     let categories = [];
     let selectedCategory = '';
-    let cart = {}; // key: itemId, value: { item, qty }
-    let selectedVariants = {}; // key: groupId, value: selectedItemId
+    let cart = {}; // key: itemId, val: { item, qty }
+    let activeVariantModalGroupId = null;
 
-    // Load Data
     async function loadCatalogue() {
       const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID}`;
       try {
         const res = await fetch(gvizUrl);
         const csvText = await res.text();
-        const rows = parseCSV(csvText);
-        processRows(rows);
+        processRows(parseCSV(csvText));
       } catch (err) {
-        console.error("Error fetching sheet:", err);
-        document.getElementById('activeCategoryTitle').innerText = "Failed to load catalogue. Please check connection.";
+        console.error(err);
+        document.getElementById('activeCategoryTitle').innerText = "Failed to load sheet data. Please check connection.";
       }
     }
 
@@ -553,13 +589,13 @@
         const r = rows[i];
         if (!r[col.id] && !r[col.name]) continue;
 
-        const groupId = r[col.group] || r[col.id] || `G-${i}`;
+        const groupId = r[col.group] || r[col.id] || `GRP-${i}`;
         const itemObj = {
           groupId: groupId,
           itemId: r[col.id] || '',
           category: r[col.category] || 'General',
           name: r[col.name] || 'Product',
-          varient: r[col.varient] || 'Default',
+          varient: r[col.varient] || 'Standard',
           material: r[col.material] || '',
           rate: parseFloat(r[col.rate]) || 0,
           image: r[col.image] || ''
@@ -572,7 +608,8 @@
             category: itemObj.category,
             material: itemObj.material,
             image: itemObj.image,
-            variants: [itemObj]
+            variants: [itemObj],
+            selectedVariantId: itemObj.itemId
           });
         } else {
           const g = groupsMap.get(groupId);
@@ -582,13 +619,6 @@
       }
 
       groupedProducts = Array.from(groupsMap.values());
-
-      // Init selected variant
-      groupedProducts.forEach(g => {
-        selectedVariants[g.groupId] = g.variants[0].itemId;
-      });
-
-      // Categories
       categories = [...new Set(groupedProducts.map(g => g.category.trim()))].filter(Boolean);
       selectedCategory = categories[0] || '';
 
@@ -613,11 +643,6 @@
       renderProducts();
     }
 
-    function selectVariant(groupId, itemId) {
-      selectedVariants[groupId] = itemId;
-      renderCardFooter(groupId);
-    }
-
     function renderProducts() {
       const query = document.getElementById('searchInput').value.trim().toLowerCase();
       let list = groupedProducts;
@@ -635,84 +660,146 @@
       }
 
       const grid = document.getElementById('productGrid');
-      if (list.length === 0) {
-        grid.innerHTML = '<div class="empty-state">No products found in this category.</div>';
+      if (!list.length) {
+        grid.innerHTML = '<div class="empty-state">No products found.</div>';
         return;
       }
 
       grid.innerHTML = list.map(g => {
-        const activeItemId = selectedVariants[g.groupId] || g.variants[0].itemId;
-        const activeItem = g.variants.find(v => v.itemId === activeItemId) || g.variants[0];
+        const activeItem = g.variants.find(v => v.itemId === g.selectedVariantId) || g.variants[0];
+        const isMulti = g.variants.length > 1;
 
         return `
           <div class="card" id="card-${g.groupId}">
             <div>
-              <div class="img-wrap">
+              <div class="img-wrap" onclick="${isMulti ? `openVariantModal('${g.groupId}')` : ''}">
                 <img src="${formatDriveImage(g.image)}" alt="${g.name}" loading="lazy" />
               </div>
               ${g.material ? `<span class="item-material">${g.material}</span>` : ''}
               <div class="item-name">${g.name}</div>
 
-              <!-- Variant Chips -->
-              <div class="variant-selector-wrap">
-                ${g.variants.map(v => `
-                  <div class="variant-chip ${v.itemId === activeItemId ? 'selected' : ''}"
-                       onclick="changeVariant('${g.groupId}', '${v.itemId}')">
-                    ${v.varient || v.itemId}
-                  </div>
-                `).join('')}
-              </div>
+              ${isMulti ? `
+                <div class="variant-trigger-pill" onclick="openVariantModal('${g.groupId}')">
+                  <span>${activeItem.varient}</span>
+                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+              ` : `
+                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">${activeItem.varient || ''}</div>
+              `}
             </div>
 
-            <div id="footer-${g.groupId}">
-              ${getFooterHtml(g, activeItem)}
+            <div class="card-footer" id="footer-${g.groupId}">
+              ${renderCardFooterHtml(g, activeItem)}
             </div>
           </div>
         `;
       }).join('');
     }
 
-    function getFooterHtml(g, item) {
-      const qty = cart[item.itemId]?.qty || 0;
-      return `
-        <div class="card-footer">
+    function renderCardFooterHtml(g, item) {
+      const isMulti = g.variants.length > 1;
+      const totalGroupQty = g.variants.reduce((sum, v) => sum + (cart[v.itemId]?.qty || 0), 0);
+
+      // If multi-variant, the button prompts open variant modal if not in cart, or displays total count
+      if (isMulti) {
+        return `
           <div class="price-box">
             <span class="rate">${item.rate > 0 ? '₹' + item.rate : 'POA'}</span>
             <span class="item-code">${item.itemId}</span>
           </div>
-          ${qty === 0 ? `
-            <button class="btn-add" onclick="updateQty('${item.itemId}', 1)">+ ADD</button>
+          ${totalGroupQty === 0 ? `
+            <button class="btn-add" onclick="openVariantModal('${g.groupId}')">+ ADD</button>
           ` : `
-            <div class="qty-counter">
-              <button onclick="updateQty('${item.itemId}', -1)">−</button>
-              <span class="qty-val">${qty}</span>
-              <button onclick="updateQty('${item.itemId}', 1)">+</button>
-            </div>
+            <button class="btn-add" style="background: #e8f5e9; border-color: var(--primary);" onclick="openVariantModal('${g.groupId}')">${totalGroupQty} ADDED ▾</button>
           `}
+        `;
+      }
+
+      // Single item direct add / counter
+      const qty = cart[item.itemId]?.qty || 0;
+      return `
+        <div class="price-box">
+          <span class="rate">${item.rate > 0 ? '₹' + item.rate : 'POA'}</span>
+          <span class="item-code">${item.itemId}</span>
         </div>
+        ${qty === 0 ? `
+          <button class="btn-add" onclick="updateQty('${item.itemId}', 1)">+ ADD</button>
+        ` : `
+          <div class="qty-counter">
+            <button onclick="updateQty('${item.itemId}', -1)">−</button>
+            <span class="qty-val">${qty}</span>
+            <button onclick="updateQty('${item.itemId}', 1)">+</button>
+          </div>
+        `}
       `;
     }
 
-    function changeVariant(groupId, itemId) {
-      selectedVariants[groupId] = itemId;
-      // Re-highlight chips
-      const card = document.getElementById(`card-${groupId}`);
-      if (!card) return;
-      const chips = card.querySelectorAll('.variant-chip');
+    /* Variant Dialog Logic */
+    function openVariantModal(groupId) {
+      activeVariantModalGroupId = groupId;
       const g = groupedProducts.find(x => x.groupId === groupId);
-      chips.forEach((c, idx) => {
-        if (g.variants[idx].itemId === itemId) c.classList.add('selected');
-        else c.classList.remove('selected');
-      });
+      if (!g) return;
 
-      const activeItem = g.variants.find(v => v.itemId === itemId);
-      document.getElementById(`footer-${groupId}`).innerHTML = getFooterHtml(g, activeItem);
+      document.getElementById('variantModalTitle').innerText = `${g.name} (${g.variants.length} Options)`;
+      renderVariantModalList(g);
+      document.getElementById('variantModal').classList.add('open');
     }
 
+    function closeVariantModal() {
+      document.getElementById('variantModal').classList.remove('open');
+      activeVariantModalGroupId = null;
+    }
+
+    function renderVariantModalList(g) {
+      const container = document.getElementById('variantModalList');
+      container.innerHTML = g.variants.map(v => {
+        const qty = cart[v.itemId]?.qty || 0;
+        return `
+          <div class="variant-card-item ${qty > 0 ? 'in-cart' : ''}">
+            <div class="variant-info-left" onclick="selectVariantAndClose('${g.groupId}', '${v.itemId}')" style="cursor:pointer;">
+              <img class="variant-thumb" src="${formatDriveImage(g.image)}" alt="${v.name}" />
+              <div>
+                <div class="variant-spec-title">${v.varient || v.name}</div>
+                <div class="variant-spec-sub">Code: ${v.itemId} ${v.material ? '• ' + v.material : ''}</div>
+                <div class="variant-price">${v.rate > 0 ? '₹' + v.rate : 'POA'}</div>
+              </div>
+            </div>
+            <div>
+              ${qty === 0 ? `
+                <button class="btn-add" onclick="updateQty('${v.itemId}', 1); refreshVariantModal();">+ ADD</button>
+              ` : `
+                <div class="qty-counter">
+                  <button onclick="updateQty('${v.itemId}', -1); refreshVariantModal();">−</button>
+                  <span class="qty-val">${qty}</span>
+                  <button onclick="updateQty('${v.itemId}', 1); refreshVariantModal();">+</button>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectVariantAndClose(groupId, itemId) {
+      const g = groupedProducts.find(x => x.groupId === groupId);
+      if (g) {
+        g.selectedVariantId = itemId;
+        renderProducts();
+      }
+    }
+
+    function refreshVariantModal() {
+      if (activeVariantModalGroupId) {
+        const g = groupedProducts.find(x => x.groupId === activeVariantModalGroupId);
+        if (g) renderVariantModalList(g);
+      }
+    }
+
+    /* Cart Management */
     function updateQty(itemId, delta) {
-      // Find item
       let targetItem = null;
       let targetGroup = null;
+
       for (const g of groupedProducts) {
         const found = g.variants.find(v => v.itemId === itemId);
         if (found) { targetItem = found; targetGroup = g; break; }
@@ -724,15 +811,19 @@
         delete cart[itemId];
       } else {
         cart[itemId] = { item: targetItem, qty: cur };
+        targetGroup.selectedVariantId = itemId;
       }
 
-      // Update UI
+      // Re-render card footer
       if (targetGroup) {
-        const activeItemId = selectedVariants[targetGroup.groupId];
-        if (activeItemId === itemId) {
-          const footer = document.getElementById(`footer-${targetGroup.groupId}`);
-          if (footer) footer.innerHTML = getFooterHtml(targetGroup, targetItem);
-        }
+        const footer = document.getElementById(`footer-${targetGroup.groupId}`);
+        const activeItem = targetGroup.variants.find(v => v.itemId === targetGroup.selectedVariantId) || targetGroup.variants[0];
+        if (footer) footer.innerHTML = renderCardFooterHtml(targetGroup, activeItem);
+
+        // Update pill text on card
+        const card = document.getElementById(`card-${targetGroup.groupId}`);
+        const pillText = card?.querySelector('.variant-trigger-pill span');
+        if (pillText) pillText.innerText = activeItem.varient;
       }
 
       updateCartBar();
@@ -754,7 +845,6 @@
       }
     }
 
-    /* Cart Modal Controls */
     function openCartModal() {
       renderCartItems();
       document.getElementById('cartModal').classList.add('open');
@@ -767,15 +857,15 @@
       const items = Object.values(cart);
       document.getElementById('cartCountHeader').innerText = items.reduce((sum, i) => sum + i.qty, 0);
       const container = document.getElementById('cartItemList');
-      if (items.length === 0) {
+      if (!items.length) {
         container.innerHTML = '<div class="empty-state">Your order cart is empty.</div>';
         return;
       }
       container.innerHTML = items.map(({ item, qty }) => `
         <div class="cart-row">
           <div>
-            <div class="cart-item-title">${item.name} (${item.varient})</div>
-            <div class="cart-item-sub">Item Code: ${item.itemId} \vert{} Rate:${item.rate ? '₹' + item.rate : 'POA'}</div>
+            <div style="font-weight:700; font-size:13px;">${item.name} (${item.varient})</div>
+            <div style="font-size:11px; color:var(--text-muted);">Code: ${item.itemId} | Rate: ${item.rate ? '₹' + item.rate : 'POA'}</div>
           </div>
           <div class="qty-counter">
             <button onclick="updateQty('${item.itemId}', -1)">−</button>
@@ -786,9 +876,8 @@
       `).join('');
     }
 
-    /* Checkout & WhatsApp Dispatch */
     function openCheckoutModal() {
-      if (Object.keys(cart).length === 0) return alert('Your cart is empty!');
+      if (!Object.keys(cart).length) return alert('Your cart is empty!');
       closeCartModal();
       document.getElementById('checkoutModal').classList.add('open');
     }
@@ -804,7 +893,7 @@
       const notes = document.getElementById('orderNotes').value.trim();
 
       const items = Object.values(cart);
-      if (items.length === 0) return alert('Your cart is empty!');
+      if (!items.length) return alert('Your cart is empty!');
 
       let totalEst = 0;
       let orderListText = '';
@@ -821,27 +910,23 @@
 ━━━━━━━━━━━━━━━━━━━━
 🏢 *Firm Name:* ${firm}
 📞 *Contact:* ${phone}
-🚚 *Transport / City:* ${transport}${notes ? `📝 *Note:* ${notes}\n` : ''}━━━━━━━━━━━━━━━━━━━━
+🚚 *Transport / City:* ${transport}
+${notes ? `📝 *Note:* ${notes}\n` : ''}━━━━━━━━━━━━━━━━━━━━
 *ORDER SUMMARY:*
 ${orderListText}━━━━━━━━━━━━━━━━━━━━
-*Total Items:* ${items.reduce((s, x) => s + x.qty, 0)} pcs${totalEst > 0 ? `*Estimated Total:* ₹${totalEst.toLocaleString('en-IN')}` : ''}
+*Total Items:* ${items.reduce((s, x) => s + x.qty, 0)} pcs
+${totalEst > 0 ? `*Estimated Total:* ₹${totalEst.toLocaleString('en-IN')}` : ''}
 
 Please confirm stock availability & dispatch.`;
 
       const encodedMsg = encodeURIComponent(message);
       const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMsg}`;
 
-      // Open WhatsApp
       window.open(waUrl, '_blank');
       closeCheckoutModal();
     }
 
-    // Search Listener
-    document.getElementById('searchInput').addEventListener('input', () => {
-      renderProducts();
-    });
-
-    // Start
+    document.getElementById('searchInput').addEventListener('input', renderProducts);
     loadCatalogue();
   </script>
 </body>
